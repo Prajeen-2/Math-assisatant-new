@@ -1,383 +1,199 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>SS Math Assistant — Fibonacci Spiral</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    :root{--card:#e2f7f7;--bg:#2aa399;--accent:#7c3aed;--muted:#667085}
-    body{font-family:Inter,Segoe UI,Arial; background:var(--bg); margin:0; padding:24px; color:#0f172a}
-    .wrap{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:360px 1fr;gap:18px}
-    .card{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 6px 20px rgba(15,23,42,0.06)}
-    h1{margin:0 0 12px 0;font-size:20px}
-    label{display:block;margin-top:10px;color:var(--muted);font-size:13px}
-    input[type="number"], input[type="text"]{width:100%;padding:10px;border-radius:8px;border:1px solid #e6eef8;margin-top:8px}
-    .btn{display:inline-block;margin-top:10px;padding:8px 12px;border-radius:8px;border:none;background:var(--accent);color:white;cursor:pointer}
-    .row{display:flex;gap:8px;align-items:center}
-    #resultBox{margin-top:10px;padding:10px;border-radius:8px;background:#f8fafc;border:1px solid #e6eef8;font-weight:600}
-    canvas{width:100%;height:720px;display:block;border-radius:12px;background:white}
-    .small{font-size:13px;color:var(--muted)}
-    .controls{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
-    .color-input{width:36px;height:36px;padding:0;border-radius:8px;border:1px solid #e6eef8}
-    .link-muted{color:var(--muted);font-size:13px}
-  </style>
+<meta charset="UTF-8">
+<title>SS Math Assistant</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+    body {
+        font-family: "Poppins", sans-serif;
+        background: linear-gradient(135deg, #fff8dc, #fef9e7);
+        margin: 0;
+        padding: 0;
+        text-align: center;
+    }
+    header {
+        background-color: #ffcc00;
+        padding: 20px;
+        font-size: 30px;
+        font-weight: bold;
+        color: #333;
+        box-shadow: 0px 3px 10px rgba(0,0,0,0.2);
+    }
+    .container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 30px;
+    }
+    .card {
+        background: #fff;
+        width: 420px;
+        margin: 15px;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.15);
+        transition: 0.3s;
+    }
+    .card:hover { transform: scale(1.03); }
+
+    h2 { color: #333; }
+
+    input {
+        padding: 8px;
+        width: 150px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        margin: 5px;
+        font-size: 16px;
+    }
+    button {
+        padding: 10px 18px;
+        border: none;
+        border-radius: 8px;
+        background-color: #6f42c1;
+        color: #fff;
+        cursor: pointer;
+        margin: 5px;
+        font-size: 15px;
+        transition: 0.3s;
+    }
+    button:hover {
+        background-color: #5a33a6;
+        transform: scale(1.05);
+    }
+    #result {
+        margin-top: 15px;
+        font-size: 18px;
+        font-weight: 500;
+    }
+    #history {
+        background: #fef7d1;
+        border-radius: 10px;
+        padding: 10px;
+        margin-top: 15px;
+        height: 150px;
+        overflow-y: auto;
+        box-shadow: inset 0px 2px 5px rgba(0,0,0,0.1);
+    }
+    #history p {
+        margin: 4px;
+        font-size: 14px;
+        color: #333;
+    }
+
+    img {
+        margin-top: 20px;
+        border: 2px solid #ccc;
+        border-radius: 10px;
+        width: 100%;
+    }
+</style>
 </head>
+
 <body>
-  <div style="max-width:1100px;margin:0 auto;">
-    <h1>SS Math Assistant — Fibonacci Spiral + Calculator</h1>
-    <div class="wrap">
-      <div class="card">
-        <h2>Calculator</h2>
-        <label>Value A</label>
-        <input id="valA" type="text" value="2">
-        <label>Value B</label>
-        <input id="valB" type="text" value="54">
-        <div class="controls">
-          <button class="btn" onclick="doCalc('add')">Add</button>
-          <button class="btn" onclick="doCalc('sub')">Subtract</button>
-          <button class="btn" onclick="doCalc('mul')">Multiply</button>
-          <button class="btn" onclick="doCalc('div')">Divide</button>
+
+<header>🧮 SS Math Assistant</header>
+
+<div class="container">
+
+    <!-- Arithmetic Card -->
+    <div class="card">
+        <h2>Basic Arithmetic</h2>
+
+        <input type="number" id="valA" placeholder="Enter A">
+        <input type="number" id="valB" placeholder="Enter B"><br>
+
+        <button onclick="calculate('add')">Add</button>
+        <button onclick="calculate('sub')">Subtract</button>
+        <button onclick="calculate('mul')">Multiply</button>
+        <button onclick="calculate('div')">Divide</button>
+
+        <div id="result"></div>
+
+        <div id="history">
+            <strong>🕒 Calculation History</strong>
+            <div id="historyList"></div>
         </div>
-        <div id="resultBox" style="display:none"></div>
-
-        <h2 style="margin-top:18px">Fibonacci Curve</h2>
-        <label>Number of arcs (N)</label>
-        <input id="terms" type="number" min="1" max="30" value="8">
-        <div class="controls">
-          <button class="btn" onclick="generate()">Generate Fibonacci</button>
-          <button class="btn" onclick="downloadPNG()">Download PNG</button>
-        </div>
-
-        <label class="small">Line color gradient</label>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input id="c1" class="color-input" type="color" value="#ff7b00">
-          <input id="c2" class="color-input" type="color" value="#ffd24d">
-          <input id="c3" class="color-input" type="color" value="#00bfff">
-        </div>
-
-        <label class="small">Options</label>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <label><input id="showSquares" type="checkbox" checked> Show squares</label>
-          <label><input id="animate" type="checkbox" checked> Animate</label>
-          <label><input id="showGrid" type="checkbox" checked> Show grid</label>
-        </div>
-
-        <div style="margin-top:10px;" class="link-muted">Tip: use mouse wheel to zoom and drag to pan the canvas.</div>
-      </div>
-
-      <div class="card" style="padding:12px">
-        <canvas id="canvas" width="1000" height="720"></canvas>
-      </div>
     </div>
-  </div>
+
+    <!-- Fibonacci Curve Card -->
+    <div class="card">
+        <h2>🌀 Fibonacci Curve</h2>
+
+        <label>Enter number of arcs (N):</label><br>
+        <input type="number" id="terms" min="1" max="20" value="8">
+
+        <button onclick="loadSpiral()">Generate Curve</button>
+
+        <p id="spiralLabel"></p>
+
+        <img id="spiralImage" src="" alt="Fibonacci Spiral will appear here">
+    </div>
+
+</div>
 
 <script>
-/* ---------- Utilities ---------- */
-function qs(sel){return document.querySelector(sel)}
-function qsa(sel){return document.querySelectorAll(sel)}
+/* -------------------------------
+   CONFIGURE BACKEND URL HERE  
+--------------------------------*/
+const API_BASE = "YOUR_RENDER_URL_HERE";  
+/* Example:
+const API_BASE = "https://math-backend.onrender.com";
+*/
 
-/* ---------- Calculator ---------- */
-function doCalc(op){
-  const a = qs('#valA').value;
-  const b = qs('#valB').value;
-  const body = `a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}&op=${encodeURIComponent(op)}`;
-  qs('#resultBox').style.display='block';
-  qs('#resultBox').innerText='Calculating...';
-  fetch('/api/calculate', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body})
-    .then(r => r.json())
-    .then(json => {
-      if (json.error) qs('#resultBox').innerText = 'Error: ' + json.error;
-      else qs('#resultBox').innerText = 'Result: ' + json.result;
-    })
-    .catch(e => qs('#resultBox').innerText = 'Network error');
-}
+/* -------------------------------
+   BASIC ARITHMETIC
+--------------------------------*/
+let historyList = [];
 
-/* ---------- Fibonacci API + drawing ---------- */
-let currentGeometry = null;
-const canvas = qs('#canvas');
-const ctx = canvas.getContext('2d');
-let worldToPixel = {scale:1, tx:0, ty:0};
-let isDragging=false, dragStart=null;
-let mouseLast = null;
+function calculate(op) {
+    const a = parseFloat(document.getElementById("valA").value);
+    const b = parseFloat(document.getElementById("valB").value);
 
-canvas.addEventListener('mousedown', e => { isDragging=true; dragStart={x:e.clientX, y:e.clientY, tx:worldToPixel.tx, ty:worldToPixel.ty}; });
-window.addEventListener('mouseup', ()=> isDragging=false);
-window.addEventListener('mousemove', e => {
-  if (!isDragging) return;
-  const dx = e.clientX - dragStart.x;
-  const dy = e.clientY - dragStart.y;
-  worldToPixel.tx = dragStart.tx + dx;
-  worldToPixel.ty = dragStart.ty + dy;
-  renderImmediate();
-});
-
-canvas.addEventListener('wheel', e => {
-  e.preventDefault();
-  const rect = canvas.getBoundingClientRect();
-  const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
-  const factor = Math.exp(-e.deltaY * 0.0015);
-  zoomAtPoint(factor, cx, cy);
-});
-
-function zoomAtPoint(factor, cx, cy) {
-  // screen -> world
-  const sx = (cx - worldToPixel.tx) / worldToPixel.scale;
-  const sy = - (cy - worldToPixel.ty) / worldToPixel.scale;
-  worldToPixel.scale *= factor;
-  worldToPixel.tx = cx - sx * worldToPixel.scale;
-  worldToPixel.ty = cy + sy * worldToPixel.scale;
-  renderImmediate();
-}
-
-function generate(){
-  const terms = parseInt(qs('#terms').value) || 8;
-  const body = `terms=${encodeURIComponent(terms)}`;
-  qs('#resultBox').style.display='block';
-  qs('#resultBox').innerText = 'Generating...';
-  fetch('/api/fibonacci', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body})
-    .then(r => r.json())
-    .then(json => {
-      currentGeometry = json;
-      qs('#resultBox').innerText = 'Rendered ' + (json.arcs ? json.arcs.length : 0) + ' arcs';
-      fitAndRender(json);
-    })
-    .catch(e => {
-      qs('#resultBox').innerText = 'Network error';
-      console.error(e);
-    });
-}
-
-/* ---------- Geometry helpers ---------- */
-function fitAndRender(json){
-  if (!json || !json.arcs) return;
-  // sample arc points to compute world bounds
-  let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
-  const arcs = json.arcs;
-  for (const a of arcs){
-    const start = a.start;
-    const end = a.start + Math.PI/2;
-    const samples = 120;
-    for (let s=0;s<=samples;s++){
-      const t = start + (end - start) * s / samples;
-      const px = a.cx + a.r * Math.cos(t);
-      const py = a.cy + a.r * Math.sin(t);
-      if (px < minX) minX = px;
-      if (px > maxX) maxX = px;
-      if (py < minY) minY = py;
-      if (py > maxY) maxY = py;
+    if (isNaN(a) || isNaN(b)) {
+        document.getElementById("result").innerText = "Enter valid inputs";
+        return;
     }
-  }
-  // padding
-  const padX = (maxX - minX) * 0.08 + 0.5;
-  const padY = (maxY - minY) * 0.08 + 0.5;
-  minX -= padX; maxX += padX; minY -= padY; maxY += padY;
 
-  // compute scale so world fits canvas
-  const pixelW = canvas.width, pixelH = canvas.height;
-  const scaleX = pixelW / (maxX - minX);
-  const scaleY = pixelH / (maxY - minY);
-  const scale = Math.min(scaleX, scaleY) * 0.9; // small margin
-
-  const worldCenterX = (minX + maxX)/2;
-  const worldCenterY = (minY + maxY)/2;
-  const tx = pixelW/2 - worldCenterX * scale;
-  const ty = pixelH/2 + worldCenterY * scale;
-
-  worldToPixel = { scale, tx, ty };
-  renderAnimated(json);
-}
-
-function worldToPixelPoint(pt){
-  const s = worldToPixel.scale;
-  const x = pt.x * s + worldToPixel.tx;
-  const y = -pt.y * s + worldToPixel.ty;
-  return {x,y};
-}
-
-/* ---------- Rendering ---------- */
-function renderImmediate(){
-  if (!currentGeometry) return;
-  renderAll(currentGeometry);
-}
-
-function renderAll(data){
-  const w = canvas.width, h = canvas.height;
-  ctx.clearRect(0,0,w,h);
-  ctx.save();
-
-  // grid
-  if (qs('#showGrid').checked) drawGrid();
-
-  // squares
-  if (qs('#showSquares').checked && data.squares){
-    for (const s of data.squares){
-      drawWorldRect(s.x, s.y, s.w, s.h, 'rgba(240,248,255,0.8)', 'rgba(160,180,200,0.25)');
-      // label
-      const center = worldToPixelPoint({x:s.x + s.w/2, y:s.y + s.h/2});
-      ctx.fillStyle = '#222'; ctx.font = '12px Inter'; ctx.textAlign='center';
-      ctx.fillText(s.label, center.x, center.y+4);
+    let result;
+    switch(op) {
+        case "add": result = a + b; break;
+        case "sub": result = a - b; break;
+        case "mul": result = a * b; break;
+        case "div": 
+            if (b === 0) {
+                result = "Cannot divide by zero";
+            } else result = a / b;
+            break;
     }
-  }
 
-  // arcs
-  drawArcs(data.arcs, 1.0);
-
-  // title
-  ctx.fillStyle = '#111'; ctx.font = '16px Inter'; ctx.textAlign='center';
-  ctx.fillText('Fibonacci Spiral — each arc = 90° (radii are Fibonacci numbers)', canvas.width/2, 20);
-
-  ctx.restore();
+    document.getElementById("result").innerText = "Result: " + result;
+    addToHistory(`${a} ${op} ${b} = ${result}`);
 }
 
-// arc-by-arc animation
-function renderAnimated(data){
-  if (!qs('#animate').checked){ renderAll(data); return; }
-  const arcs = data.arcs;
-  let startTime = null;
-  const total = arcs.length;
-  const durationPerArc = 400; // ms
-  function step(ts){
-    if (!startTime) startTime = ts;
-    const elapsed = ts - startTime;
-    const progress = Math.min(1, elapsed / (durationPerArc * total));
-    // draw upto progress
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.save();
-    if (qs('#showGrid').checked) drawGrid();
-    if (qs('#showSquares').checked && data.squares){
-      for (const s of data.squares) drawWorldRect(s.x,s.y,s.w,s.h,'rgba(240,248,255,0.8)','rgba(160,180,200,0.25)');
-    }
-    drawArcs(data.arcs, progress);
-    ctx.restore();
-    if (progress < 1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
+function addToHistory(entry) {
+    if (historyList.length >= 8) historyList.shift();
+    historyList.push(entry);
+
+    document.getElementById("historyList").innerHTML =
+        historyList.map(e => `<p>➡️ ${e}</p>`).join("");
 }
 
-function drawArcs(arcs, overallProgress){
-  if (!arcs) return;
-  const total = arcs.length;
-  // gradient
-  const col1 = qs('#c1').value, col2 = qs('#c2').value, col3 = qs('#c3').value;
-  const grad = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
-  grad.addColorStop(0, col1); grad.addColorStop(0.5, col2); grad.addColorStop(1, col3);
-  ctx.strokeStyle = grad; ctx.lineWidth = 3; ctx.lineCap='round';
+/* -------------------------------
+   LOAD FIBONACCI SPIRAL (IMAGE)
+--------------------------------*/
+function loadSpiral() {
+    const n = document.getElementById("terms").value;
+    const img = document.getElementById("spiralImage");
 
-  const full = Math.floor(overallProgress * total);
-  const partial = overallProgress * total - full;
+    img.src = `${API_BASE}/fibonacci-image?terms=${n}&width=600&height=600&rand=${Math.random()}`;
 
-  for (let i=0;i<full;i++) drawSingleArc(arcs[i], 1.0);
-  if (full < total) drawSingleArc(arcs[full], partial);
+    document.getElementById("spiralLabel").innerText =
+        `Generated Fibonacci curve with ${n} arcs`;
 }
-
-function drawSingleArc(a, frac){
-  // a: {cx,cy,r,start} world units; frac: 0..1 portion of quarter arc to draw
-  const center = worldToPixelPoint({x:a.cx, y:a.cy});
-  const rPx = Math.abs(a.r * worldToPixel.scale);
-  const start = -a.start; // invert y for canvas
-  const end = -(a.start + Math.PI/2);
-  const drawEnd = start + (end - start) * frac;
-
-  ctx.beginPath();
-  ctx.arc(center.x, center.y, rPx, start, drawEnd, false);
-  ctx.stroke();
-}
-
-// draw a world-aligned rectangle
-function drawWorldRect(x, y, w, h, fill, stroke){
-  const p1 = worldToPixelPoint({x:x, y:y});
-  const p2 = worldToPixelPoint({x:x+w, y:y+h});
-  const left = Math.min(p1.x, p2.x), top = Math.min(p1.y, p2.y);
-  const width = Math.abs(p2.x - p1.x), height = Math.abs(p2.y - p1.y);
-  ctx.fillStyle = fill; ctx.fillRect(left, top, width, height);
-  ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.strokeRect(left, top, width, height);
-}
-
-// draw grid using world steps
-function drawGrid(){
-  ctx.strokeStyle = '#eee'; ctx.lineWidth = 1;
-  // compute nice step in world units
-  const approxPx = 80;
-  const stepWorld = approxPx / worldToPixel.scale;
-  const nice = niceStep(stepWorld);
-
-  // world bounds
-  const leftWorld = (0 - worldToPixel.tx)/worldToPixel.scale;
-  const rightWorld = (canvas.width - worldToPixel.tx)/worldToPixel.scale;
-  const topWorld = - (0 - worldToPixel.ty)/worldToPixel.scale;
-  const bottomWorld = - (canvas.height - worldToPixel.ty)/worldToPixel.scale;
-
-  const startX = Math.floor(leftWorld / nice) * nice;
-  for (let x=startX; x<= rightWorld; x+=nice){
-    const p1 = worldToPixelPoint({x:x, y:topWorld});
-    const p2 = worldToPixelPoint({x:x, y:bottomWorld});
-    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
-  }
-  const startY = Math.floor(bottomWorld / nice) * nice;
-  for (let y=startY; y<= topWorld; y+=nice){
-    const p1 = worldToPixelPoint({x:leftWorld, y:y});
-    const p2 = worldToPixelPoint({x:rightWorld, y:y});
-    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
-  }
-
-  // axes
-  ctx.strokeStyle = '#444'; ctx.lineWidth = 2;
-  const zeroX1 = worldToPixelPoint({x:0, y:topWorld});
-  const zeroX2 = worldToPixelPoint({x:0, y:bottomWorld});
-  ctx.beginPath(); ctx.moveTo(zeroX1.x, zeroX1.y); ctx.lineTo(zeroX2.x, zeroX2.y); ctx.stroke();
-  const zeroY1 = worldToPixelPoint({x:leftWorld, y:0});
-  const zeroY2 = worldToPixelPoint({x:rightWorld, y:0});
-  ctx.beginPath(); ctx.moveTo(zeroY1.x, zeroY1.y); ctx.lineTo(zeroY2.x, zeroY2.y); ctx.stroke();
-
-  // labels ticks
-  ctx.fillStyle = '#333'; ctx.font = '12px Inter'; ctx.textAlign='center';
-  for (let x=startX; x<= rightWorld; x+=nice){
-    if (Math.abs(x) < 1e-9) continue;
-    const p = worldToPixelPoint({x:x, y:0});
-    ctx.fillText((x).toFixed(0), p.x, p.y + 14);
-  }
-  ctx.textAlign='right';
-  for (let y=startY; y<= topWorld; y+=nice){
-    if (Math.abs(y) < 1e-9) continue;
-    const p = worldToPixelPoint({x:0, y:y});
-    ctx.fillText((-y).toFixed(0), p.x - 8, p.y + 4);
-  }
-  ctx.textAlign='center';
-}
-
-function niceStep(x) {
-  const exp = Math.floor(Math.log10(x));
-  const mant = x / Math.pow(10, exp);
-  let base;
-  if (mant < 1.5) base = 1;
-  else if (mant < 3.5) base = 2;
-  else if (mant < 7.5) base = 5;
-  else base = 10;
-  return base * Math.pow(10, exp);
-}
-
-/* ---------- Download PNG ---------- */
-function downloadPNG(){
-  const link = document.createElement('a');
-  link.href = canvas.toDataURL('image/png');
-  link.download = 'fibonacci_spiral.png';
-  link.click();
-}
-
-/* ---------- Init ---------- */
-window.addEventListener('load', () => {
-  // initial generate
-  generate();
-  // ensure canvas pixel size matches CSS sizing
-  function resizeCanvas(){
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = Math.floor(rect.width);
-    canvas.height = Math.floor(rect.height);
-    renderImmediate();
-  }
-  window.addEventListener('resize', resizeCanvas);
-  resizeCanvas();
-});
 </script>
+
 </body>
 </html>
