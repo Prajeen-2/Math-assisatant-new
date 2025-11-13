@@ -1,117 +1,50 @@
-import com.sun.net.httpserver.*;
+import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpExchange;
+
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
+import java.awt.*;
+import java.awt.geom.*;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-import java.awt.BasicStroke;
-import java.awt.geom.Point2D;
-import java.awt.geom.Arc2D;
-import java.awt.image.BufferedImage;
-import java.awt.geom.*;
-import java.awt.image.*;
-import javax.imageio.ImageIO;
 
 public class FibonacciServer {
 
     public static void main(String[] args) throws Exception {
 
         int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
-
-
-        HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         System.out.println("Server running on port: " + port);
 
-        server.createContext("/", exchange -> {
-            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
-                sendText(exchange, 405, "Method Not Allowed");
-                return;
-            }
+        HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
 
-            File file = new File("index.html");
-            if (!file.exists()) {
-                sendText(exchange, 404, "index.html not found!");
-                return;
-            }
+        
+        server.createContext("/", exchange -> sendString(exchange, 200, "Java Fibonacci API is running"));
 
-            byte[] data = java.nio.file.Files.readAllBytes(file.toPath());
-            addCORS(exchange);
-            exchange.getResponseHeaders().set("Content-Type", "text/html; charset=utf-8");
-            exchange.sendResponseHeaders(200, data.length);
-            exchange.getResponseBody().write(data);
-            exchange.close();
-        });
+        
+        server.createContext("/fibonacci-image", exchange -> {
+            Map<String, String> params = parseQuery(exchange.getRequestURI().getQuery());
 
+            int terms = parseInt(params.get("terms"), 8);
+            int width = parseInt(params.get("width"), 600);
+            int height = parseInt(params.get("height"), 600);
 
-        server.createContext("/api/calculate", exchange -> {
-            if (!exchange.getRequestMethod().equalsIgnoreCase("POST")) {
-                sendText(exchange, 405, "POST only");
-                return;
-            }
-
-            addCORS(exchange);
-
-            String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-            Map<String, String> params = parseForm(body);
-
-            double a = Double.parseDouble(params.getOrDefault("a", "0"));
-            double b = Double.parseDouble(params.getOrDefault("b", "0"));
-            String op = params.getOrDefault("op", "add");
-
-            double result = switch (op) {
-                case "add" -> a + b;
-                case "sub" -> a - b;
-                case "mul" -> a * b;
-                case "div" -> (b == 0 ? Double.NaN : a / b);
-                default -> 0;
-            };
-
-            String json = "{\"result\":" + result + "}";
-            sendJSON(exchange, json);
-        });
-
-        server.createContext("/api/fibonacci", exchange -> {
-            if (!exchange.getRequestMethod().equalsIgnoreCase("POST")) {
-                sendText(exchange, 405, "POST only");
-                return;
-            }
-
-            addCORS(exchange);
-
-            String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-            Map<String, String> params = parseForm(body);
-
-            int terms = Integer.parseInt(params.getOrDefault("terms", "6"));
             if (terms < 1) terms = 1;
             if (terms > 20) terms = 20;
 
-            String json = generateFibonacciData(terms);
-            sendJSON(exchange, json);
-        });
+            BufferedImage img = renderFibonacci(terms, width, height);
 
-        server.createContext("/api/fibonacci-image", exchange -> {
-            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
-                sendText(exchange, 405, "GET only");
-                return;
-            }
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(img, "png", baos);
 
-            addCORS(exchange);
-
-            Map<String, String> params = parseQuery(exchange.getRequestURI().getQuery());
-            int terms = Integer.parseInt(params.getOrDefault("terms", "6"));
-            int size = Integer.parseInt(params.getOrDefault("size", "600"));
-
-            BufferedImage img = renderFibonacciImage(terms, size, size);
+            byte[] data = baos.toByteArray();
 
             exchange.getResponseHeaders().set("Content-Type", "image/png");
-            exchange.sendResponseHeaders(200, 0);
-            ImageIO.write(img, "png", exchange.getResponseBody());
+            exchange.sendResponseHeaders(200, data.length);
+            exchange.getResponseBody().write(data);
             exchange.close();
         });
 
@@ -120,118 +53,108 @@ public class FibonacciServer {
     }
 
 
-    private static String generateFibonacciData(int terms) {
-        int[] fib = new int[terms + 2];
-        fib[0] = 0;
-        fib[1] = 1;
+    private static BufferedImage renderFibonacci(int terms, int width, int height) {
 
-        for (int i = 2; i < fib.length; i++)
-            fib[i] = fib[i - 1] + fib[i - 2];
-
-        double cx = 0, cy = 0, angle = 0;
-        List<String> arcs = new ArrayList<>();
-
-        for (int i = 1; i <= terms; i++) {
-            double r = fib[i];
-            arcs.add(String.format(Locale.US,
-                    "{\"cx\":%.4f,\"cy\":%.4f,\"radius\":%.4f,\"start\":%.4f}",
-                    cx, cy, r, angle));
-
-            double endAngle = angle + Math.PI / 2;
-            double ex = cx + r * Math.cos(endAngle);
-            double ey = cy + r * Math.sin(endAngle);
-
-            double rn = fib[i + 1];
-            cx = ex - rn * Math.cos(endAngle);
-            cy = ey - rn * Math.sin(endAngle);
-            angle = endAngle;
-        }
-
-        return "[" + String.join(",", arcs) + "]";
-    }
-
-
-    private static BufferedImage renderFibonacciImage(int terms, int W, int H) {
-        BufferedImage img = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = img.createGraphics();
 
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         g.setColor(Color.WHITE);
-        g.fillRect(0, 0, W, H);
+        g.fillRect(0, 0, width, height);
 
         int[] fib = new int[terms + 2];
-        fib[0] = 0; fib[1] = 1;
-        for (int i = 2; i < fib.length; i++) fib[i] = fib[i - 1] + fib[i - 2];
+        fib[0] = 0;
+        fib[1] = 1;
+        for (int i = 2; i < fib.length; i++) {
+            fib[i] = fib[i - 1] + fib[i - 2];
+        }
 
-        double cx = W / 2.0;
-        double cy = H / 2.0;
-        double angle = 0.0;
+        java.util.List<Double> xList = new java.util.ArrayList<>();
+        java.util.List<Double> yList = new java.util.ArrayList<>();
+
+        double cx = 0;
+        double cy = 0;
+        double angle = 0;
 
         for (int i = 1; i <= terms; i++) {
-            double r = fib[i] * 20; // scale factor
-            g.setColor(new Color(50 + i * 10, 20, 200 - i * 5));
+            double r = fib[i];
+            int samples = 100 + (i * 30);
 
-            g.draw(new Arc2D.Double(cx - r, cy - r, 2 * r, 2 * r,
-                    Math.toDegrees(angle), 90, Arc2D.OPEN));
+            for (int s = 0; s <= samples; s++) {
+                double t = (double) s / samples;
+                double theta = angle + (Math.PI / 2.0) * t;
+                double x = cx + r * Math.cos(theta);
+                double y = cy + r * Math.sin(theta);
 
-            double endAngle = angle + Math.PI / 2;
-            cx = cx + r * Math.cos(endAngle);
-            cy = cy + r * Math.sin(endAngle);
+                xList.add(x);
+                yList.add(y);
+            }
+
+            double endAngle = angle + Math.PI / 2.0;
+
+            double ex = cx + r * Math.cos(endAngle);
+            double ey = cy + r * Math.sin(endAngle);
+
+            double rNext = fib[i + 1];
+            cx = ex - rNext * Math.cos(endAngle);
+            cy = ey - rNext * Math.sin(endAngle);
+
             angle = endAngle;
         }
+
+        double minX = xList.stream().min(Double::compare).get();
+        double maxX = xList.stream().max(Double::compare).get();
+        double minY = yList.stream().min(Double::compare).get();
+        double maxY = yList.stream().max(Double::compare).get();
+
+        double scale = (width * 0.8) / Math.max(maxX - minX, maxY - minY);
+        int offsetX = (int) (width * 0.1);
+        int offsetY = (int) (height * 0.1);
+
+        g.setStroke(new BasicStroke(3f));
+        g.setColor(new Color(255, 60, 60));
+
+        for (int i = 0; i < xList.size() - 1; i++) {
+            int x1 = (int) ((xList.get(i) - minX) * scale + offsetX);
+            int y1 = (int) (height - ((yList.get(i) - minY) * scale + offsetY));
+
+            int x2 = (int) ((xList.get(i + 1) - minX) * scale + offsetX);
+            int y2 = (int) (height - ((yList.get(i + 1) - minY) * scale + offsetY));
+
+            g.drawLine(x1, y1, x2, y2);
+        }
+
+        g.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        g.setColor(Color.BLACK);
+        g.drawString("Fibonacci Spiral (90° arcs, radii = Fibonacci numbers)", 20, 40);
 
         g.dispose();
         return img;
     }
 
 
-    private static void sendJSON(HttpExchange ex, String json) throws IOException {
-        addCORS(ex);
-        byte[] data = json.getBytes(StandardCharsets.UTF_8);
-        ex.getResponseHeaders().set("Content-Type", "application/json");
-        ex.sendResponseHeaders(200, data.length);
-        ex.getResponseBody().write(data);
-        ex.close();
-    }
-
-    private static void sendText(HttpExchange ex, int code, String msg) throws IOException {
-        addCORS(ex);
-        byte[] data = msg.getBytes(StandardCharsets.UTF_8);
-        ex.getResponseHeaders().set("Content-Type", "text/plain");
-        ex.sendResponseHeaders(code, data.length);
-        ex.getResponseBody().write(data);
-        ex.close();
-    }
-
-    private static Map<String, String> parseForm(String body) {
-        Map<String, String> map = new HashMap<>();
-        if (body == null) return map;
-
-        for (String p : body.split("&")) {
-            String[] kv = p.split("=");
-            if (kv.length == 2)
-                map.put(URLDecoder.decode(kv[0], StandardCharsets.UTF_8),
-                        URLDecoder.decode(kv[1], StandardCharsets.UTF_8));
-        }
-        return map;
+    private static int parseInt(String v, int def) {
+        try { return Integer.parseInt(v); }
+        catch (Exception e) { return def; }
     }
 
     private static Map<String, String> parseQuery(String q) {
         Map<String, String> map = new HashMap<>();
         if (q == null) return map;
-
         for (String p : q.split("&")) {
-            String[] kv = p.split("=");
+            String[] kv = p.split("=", 2);
             if (kv.length == 2)
                 map.put(kv[0], kv[1]);
         }
         return map;
     }
 
-    private static void addCORS(HttpExchange ex) {
-        ex.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-        ex.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
-        ex.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    private static void sendString(HttpExchange ex, int code, String msg) throws IOException {
+        byte[] data = msg.getBytes(StandardCharsets.UTF_8);
+        ex.getResponseHeaders().add("Content-Type", "text/plain");
+        ex.sendResponseHeaders(code, data.length);
+        ex.getResponseBody().write(data);
+        ex.close();
     }
 }
