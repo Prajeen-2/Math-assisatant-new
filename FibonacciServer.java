@@ -8,13 +8,9 @@ import java.awt.geom.*;
 import java.awt.image.BufferedImage;
 import java.util.*;  // Covers ArrayList, HashMap, etc.
 import java.util.List;  // Explicit import for java.util.List to avoid ambiguity with java.awt.List
+import java.util.Locale;
 import javax.imageio.ImageIO;
 
-/**
- * FibonacciServer
- * - Serves index.html at "/"
- * - POST /api/calculate  (a,b,op) -> JSON {"result":...}
- * - POST /api/fibonacci  (terms) -> JSON { arcs:[{cx
 /**
  * FibonacciServer
  * - Serves index.html at "/"
@@ -116,7 +112,7 @@ public class FibonacciServer {
                 addCORS(exchange);
                 Map<String,String> q = parseQuery(exchange.getRequestURI().getQuery());
                 int terms = parseInt(q.getOrDefault("terms","8"), 8);
-                int size = parseInt(q.get
+                int size = parseInt(q.getOrDefault("size","600"), 600);
                 BufferedImage img = renderFibonacciImage(terms, size, size);
                 exchange.getResponseHeaders().set("Content-Type", "image/png");
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -211,8 +207,7 @@ public class FibonacciServer {
     private static int parseInt(String s, int def) {
         try { return Integer.parseInt(s); } catch (Exception e) { return def; }
     }
-    java.util.List<String> arcs = new java.util.ArrayList<>();
-    java.util.List<String> squares = new java.util.ArrayList<>();
+
     // ---------------------
     // Geometry JSON generator
     // ---------------------
@@ -237,7 +232,7 @@ public class FibonacciServer {
         }
         return "{\"arcs\":[" + String.join(",", arcs) + "],\"squares\":[" + String.join(",", squares) + "]}";
     }
-    java.util.List<double[]> arcs = new java.util.ArrayList<>(); // cx,cy,r,start
+
     // ---------------------
     // PNG renderer with full scientific graph
     // ---------------------
@@ -247,11 +242,11 @@ public class FibonacciServer {
         fib[0]=0; fib[1]=1;
         for (int i=2;i<fib.length;i++) fib[i]=fib[i-1]+fib[i-2];
 
-        List<double[]> arcs = new ArrayList<>(); // cx,cy,r,start
+        List<double[]> arcsList = new ArrayList<>();  // Renamed to avoid any potential ambiguity or conflict - cx,cy,r,start
         double cx=0, cy=0, ang=0;
         for (int i=1;i<=terms;i++){
             double r = fib[i];
-            arcs.add(new double[]{cx, cy, r, ang});
+            arcsList.add(new double[]{cx, cy, r, ang});
             double end = ang + Math.PI/2;
             double ex = cx + r * Math.cos(end);
             double ey = cy + r * Math.sin(end);
@@ -262,7 +257,7 @@ public class FibonacciServer {
 
         // sample points to find bounds
         double minX=Double.POSITIVE_INFINITY, maxX=Double.NEGATIVE_INFINITY, minY=Double.POSITIVE_INFINITY, maxY=Double.NEGATIVE_INFINITY;
-        for (double[] a : arcs) {
+        for (double[] a : arcsList) {
             double acx=a[0], acy=a[1], ar=a[2], st=a[3];
             double en = st + Math.PI/2;
             int samples = Math.max(36, (int)(ar*6) + 36);
@@ -273,6 +268,14 @@ public class FibonacciServer {
                 minX = Math.min(minX, x); maxX = Math.max(maxX, x);
                 minY = Math.min(minY, y); maxY = Math.max(maxY, y);
             }
+        }
+        // include square bounds
+        for (double[] a : arcsList) {
+            double acx = a[0], acy = a[1], ar = a[2];
+            minX = Math.min(minX, acx - ar);
+            maxX = Math.max(maxX, acx + ar);
+            minY = Math.min(minY, acy - ar);
+            maxY = Math.max(maxY, acy + ar);
         }
         if (minX==Double.POSITIVE_INFINITY) { minX=-10; maxX=10; minY=-10; maxY=10; }
 
@@ -339,8 +342,8 @@ public class FibonacciServer {
 
         // draw squares for clarity (light fill)
         g.setStroke(new BasicStroke(1f));
-        for (int i=0;i<arcs.size();i++){
-            double[] a = arcs.get(i);
+        for (int i=0;i<arcsList.size();i++){
+            double[] a = arcsList.get(i);
             double acx=a[0], acy=a[1], ar=a[2];
             double left = tx + (acx - ar) * scale;
             double top  = ty  - (acy + ar) * scale;
@@ -361,13 +364,13 @@ public class FibonacciServer {
 
         // draw arcs continuous with gradient color ramp
         g.setStroke(new BasicStroke(3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        for (int i=0;i<arcs.size();i++) {
-            double[] a = arcs.get(i);
+        for (int i=0;i<arcsList.size();i++) {
+            double[] a = arcsList.get(i);
             double acx=a[0], acy=a[1], ar=a[2], st=a[3];
             double en = st + Math.PI/2;
 
             // color ramp across arcs
-            float t = i / (float)Math.max(1, arcs.size()-1);
+            float t = i / (float)Math.max(1, arcsList.size()-1);
             Color col = interpolateColor(new Color(255,120,60), new Color(0,140,220), t);
             g.setColor(col);
 
@@ -406,7 +409,7 @@ public class FibonacciServer {
         g.fillRoundRect(lx, ly, 200, 48, 8, 8);
         g.setColor(new Color(190,190,190)); g.drawRoundRect(lx,ly,200,48,8,8);
         g.setColor(new Color(0,0,0)); g.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        g.drawString("Red → Blue : Arc progression", lx + 12, ly + 18);
+        g.drawString("Orange → Blue : Arc progression", lx + 12, ly + 18);
         g.drawString("Squares show each radius (labelled)", lx + 12, ly + 36);
 
         g.dispose();
