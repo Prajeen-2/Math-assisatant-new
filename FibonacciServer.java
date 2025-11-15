@@ -14,6 +14,11 @@ import javax.imageio.ImageIO;
  * FibonacciServer
  * - Serves index.html at "/"
  * - POST /api/calculate  (a,b,op) -> JSON {"result":...}
+ * - POST /api/fibonacci  (terms) -> JSON { arcs:[{cx
+/**
+ * FibonacciServer
+ * - Serves index.html at "/"
+ * - POST /api/calculate  (a,b,op) -> JSON {"result":...}
  * - POST /api/fibonacci  (terms) -> JSON { arcs:[{cx,cy,r,start}], squares:[{x,y,w,h,label}] }
  * - GET  /api/fibonacci-image?terms=&size= -> image/png (scientific graph)
  * - Proper CORS and OPTIONS support
@@ -111,10 +116,7 @@ public class FibonacciServer {
                 addCORS(exchange);
                 Map<String,String> q = parseQuery(exchange.getRequestURI().getQuery());
                 int terms = parseInt(q.getOrDefault("terms","8"), 8);
-                int size = parseInt(q.getOrDefault("size","900"), 900);
-                if (terms < 1) terms = 1;
-                if (terms > 40) terms = 40;
-                if (size < 300) size = 300;
+                int size = parseInt(q.get
                 BufferedImage img = renderFibonacciImage(terms, size, size);
                 exchange.getResponseHeaders().set("Content-Type", "image/png");
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -209,7 +211,8 @@ public class FibonacciServer {
     private static int parseInt(String s, int def) {
         try { return Integer.parseInt(s); } catch (Exception e) { return def; }
     }
-
+    java.util.List<String> arcs = new java.util.ArrayList<>();
+    java.util.List<String> squares = new java.util.ArrayList<>();
     // ---------------------
     // Geometry JSON generator
     // ---------------------
@@ -218,8 +221,8 @@ public class FibonacciServer {
         fib[0]=0; fib[1]=1;
         for (int i=2;i<fib.length;i++) fib[i]=fib[i-1]+fib[i-2];
 
-        java.util.List<String> arcs = new java.util.ArrayList<>();  // Explicit qualification to avoid ambiguity
-        java.util.List<String> squares = new java.util.ArrayList<>();  // Explicit qualification to avoid ambiguity
+        List<String> arcs = new ArrayList<>();
+        List<String> squares = new ArrayList<>();
         double cx=0, cy=0, ang=0;
         for (int i=1;i<=terms;i++) {
             double r = fib[i];
@@ -234,7 +237,7 @@ public class FibonacciServer {
         }
         return "{\"arcs\":[" + String.join(",", arcs) + "],\"squares\":[" + String.join(",", squares) + "]}";
     }
-
+    java.util.List<double[]> arcs = new java.util.ArrayList<>(); // cx,cy,r,start
     // ---------------------
     // PNG renderer with full scientific graph
     // ---------------------
@@ -244,7 +247,7 @@ public class FibonacciServer {
         fib[0]=0; fib[1]=1;
         for (int i=2;i<fib.length;i++) fib[i]=fib[i-1]+fib[i-2];
 
-        java.util.List<double[]> arcs = new java.util.ArrayList<>();  // Explicit qualification to avoid ambiguity
+        List<double[]> arcs = new ArrayList<>(); // cx,cy,r,start
         double cx=0, cy=0, ang=0;
         for (int i=1;i<=terms;i++){
             double r = fib[i];
