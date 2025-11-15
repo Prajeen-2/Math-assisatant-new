@@ -1,4 +1,3 @@
-// FibonacciServer.java
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import java.io.*;
@@ -7,7 +6,8 @@ import java.nio.charset.StandardCharsets;
 import java.awt.*;
 import java.awt.geom.*;
 import java.awt.image.BufferedImage;
-import java.util.*;
+import java.util.*;  // Covers ArrayList, HashMap, etc.
+import java.util.List;  // Explicit import for java.util.List to avoid ambiguity with java.awt.List
 import javax.imageio.ImageIO;
 
 /**
@@ -190,7 +190,14 @@ public class FibonacciServer {
         if (q == null || q.isEmpty()) return m;
         for (String p : q.split("&")) {
             String[] kv = p.split("=",2);
-            if (kv.length == 2) m.put(kv[0], kv[1]);
+            if (kv.length == 2) {
+                try {
+                    m.put(URLDecoder.decode(kv[0], StandardCharsets.UTF_8.name()),
+                          URLDecoder.decode(kv[1], StandardCharsets.UTF_8.name()));
+                } catch (Exception ignore) {
+                    m.put(kv[0], kv[1]);  // Fallback
+                }
+            }
         }
         return m;
     }
@@ -211,8 +218,8 @@ public class FibonacciServer {
         fib[0]=0; fib[1]=1;
         for (int i=2;i<fib.length;i++) fib[i]=fib[i-1]+fib[i-2];
 
-        List<String> arcs = new ArrayList<>();
-        List<String> squares = new ArrayList<>();
+        java.util.List<String> arcs = new java.util.ArrayList<>();  // Explicit qualification to avoid ambiguity
+        java.util.List<String> squares = new java.util.ArrayList<>();  // Explicit qualification to avoid ambiguity
         double cx=0, cy=0, ang=0;
         for (int i=1;i<=terms;i++) {
             double r = fib[i];
@@ -237,7 +244,7 @@ public class FibonacciServer {
         fib[0]=0; fib[1]=1;
         for (int i=2;i<fib.length;i++) fib[i]=fib[i-1]+fib[i-2];
 
-        List<double[]> arcs = new ArrayList<>(); // cx,cy,r,start
+        java.util.List<double[]> arcs = new java.util.ArrayList<>();  // Explicit qualification to avoid ambiguity
         double cx=0, cy=0, ang=0;
         for (int i=1;i<=terms;i++){
             double r = fib[i];
