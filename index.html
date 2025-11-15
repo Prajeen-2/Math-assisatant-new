@@ -1,199 +1,168 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-<meta charset="UTF-8">
-<title>SS Math Assistant</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-    body {
-        font-family: "Poppins", sans-serif;
-        background: linear-gradient(135deg, #fff8dc, #fef9e7);
-        margin: 0;
-        padding: 0;
-        text-align: center;
-    }
-    header {
-        background-color: #ffcc00;
-        padding: 20px;
-        font-size: 30px;
-        font-weight: bold;
-        color: #333;
-        box-shadow: 0px 3px 10px rgba(0,0,0,0.2);
-    }
-    .container {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        margin-top: 30px;
-    }
-    .card {
-        background: #fff;
-        width: 420px;
-        margin: 15px;
-        padding: 25px;
-        border-radius: 15px;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.15);
-        transition: 0.3s;
-    }
-    .card:hover { transform: scale(1.03); }
-
-    h2 { color: #333; }
-
-    input {
-        padding: 8px;
-        width: 150px;
-        border-radius: 6px;
-        border: 1px solid #ccc;
-        margin: 5px;
-        font-size: 16px;
-    }
-    button {
-        padding: 10px 18px;
-        border: none;
-        border-radius: 8px;
-        background-color: #6f42c1;
-        color: #fff;
-        cursor: pointer;
-        margin: 5px;
-        font-size: 15px;
-        transition: 0.3s;
-    }
-    button:hover {
-        background-color: #5a33a6;
-        transform: scale(1.05);
-    }
-    #result {
-        margin-top: 15px;
-        font-size: 18px;
-        font-weight: 500;
-    }
-    #history {
-        background: #fef7d1;
-        border-radius: 10px;
-        padding: 10px;
-        margin-top: 15px;
-        height: 150px;
-        overflow-y: auto;
-        box-shadow: inset 0px 2px 5px rgba(0,0,0,0.1);
-    }
-    #history p {
-        margin: 4px;
-        font-size: 14px;
-        color: #333;
-    }
-
-    img {
-        margin-top: 20px;
-        border: 2px solid #ccc;
-        border-radius: 10px;
-        width: 100%;
-    }
-</style>
+  <meta charset="utf-8" />
+  <title>SS Math Assistant — Fibonacci Spiral</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{--card:#e2f7f7;--bg:#2aa399;--accent:#7c3aed;--muted:#667085}
+    body{font-family:Inter,Segoe UI,Arial; background:var(--bg); margin:0; padding:24px; color:#0f172a}
+    .wrap{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:360px 1fr;gap:18px}
+    .card{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 6px 20px rgba(15,23,42,0.06)}
+    h1{margin:0 0 12px 0;font-size:20px}
+    label{display:block;margin-top:10px;color:var(--muted);font-size:13px}
+    input[type="number"], input[type="text"]{width:100%;padding:10px;border-radius:8px;border:1px solid #e6eef8;margin-top:8px}
+    .btn{display:inline-block;margin-top:10px;padding:8px 12px;border-radius:8px;border:none;background:var(--accent);color:white;cursor:pointer}
+    #resultBox{margin-top:10px;padding:10px;border-radius:8px;background:#f8fafc;border:1px solid #e6eef8;font-weight:600}
+    canvas{width:100%;height:720px;display:block;border-radius:12px;background:white}
+  </style>
 </head>
-
 <body>
+  <div style="max-width:1100px;margin:0 auto;">
+    <h1>SS Math Assistant — Fibonacci Spiral + Calculator</h1>
+    <div class="wrap">
+      <div class="card">
+        <h2>Calculator</h2>
+        <label>Value A</label>
+        <input id="valA" type="text" value="2">
+        <label>Value B</label>
+        <input id="valB" type="text" value="54">
+        <button class="btn" onclick="doCalc('add')">Add</button>
+        <button class="btn" onclick="doCalc('sub')">Subtract</button>
+        <button class="btn" onclick="doCalc('mul')">Multiply</button>
+        <button class="btn" onclick="doCalc('div')">Divide</button>
+        <div id="resultBox" style="display:none"></div>
 
-<header>🧮 SS Math Assistant</header>
+        <h2 style="margin-top:18px">Fibonacci Curve</h2>
+        <label>Number of arcs (N)</label>
+        <input id="terms" type="number" min="1" max="30" value="8">
+        <button class="btn" onclick="generate()">Generate Fibonacci</button>
+      </div>
 
-<div class="container">
-
-    <!-- Arithmetic Card -->
-    <div class="card">
-        <h2>Basic Arithmetic</h2>
-
-        <input type="number" id="valA" placeholder="Enter A">
-        <input type="number" id="valB" placeholder="Enter B"><br>
-
-        <button onclick="calculate('add')">Add</button>
-        <button onclick="calculate('sub')">Subtract</button>
-        <button onclick="calculate('mul')">Multiply</button>
-        <button onclick="calculate('div')">Divide</button>
-
-        <div id="result"></div>
-
-        <div id="history">
-            <strong>🕒 Calculation History</strong>
-            <div id="historyList"></div>
-        </div>
+      <div class="card" style="padding:12px">
+        <canvas id="canvas" width="1000" height="720"></canvas>
+      </div>
     </div>
-
-    <!-- Fibonacci Curve Card -->
-    <div class="card">
-        <h2>🌀 Fibonacci Curve</h2>
-
-        <label>Enter number of arcs (N):</label><br>
-        <input type="number" id="terms" min="1" max="20" value="8">
-
-        <button onclick="loadSpiral()">Generate Curve</button>
-
-        <p id="spiralLabel"></p>
-
-        <img id="spiralImage" src="" alt="Fibonacci Spiral will appear here">
-    </div>
-
-</div>
+  </div>
 
 <script>
-/* -------------------------------
-   CONFIGURE BACKEND URL HERE  
---------------------------------*/
-const API_BASE = "https://math-assisatant-new-1.onrender.com";  
-/* Example:
-const API_BASE = "https://math-backend.onrender.com";
-*/
+const API = "http://localhost:8080";
+function qs(s){return document.querySelector(s);}
 
-/* -------------------------------
-   BASIC ARITHMETIC
---------------------------------*/
-let historyList = [];
+/* ---------------- CALCULATOR ---------------- */
+function doCalc(op){
+  const body = `a=${qs("#valA").value}&b=${qs("#valB").value}&op=${op}`;
+  qs("#resultBox").style.display = "block";
+  qs("#resultBox").innerText = "Calculating...";
 
-function calculate(op) {
-    const a = parseFloat(document.getElementById("valA").value);
-    const b = parseFloat(document.getElementById("valB").value);
-
-    if (isNaN(a) || isNaN(b)) {
-        document.getElementById("result").innerText = "Enter valid inputs";
-        return;
-    }
-
-    let result;
-    switch(op) {
-        case "add": result = a + b; break;
-        case "sub": result = a - b; break;
-        case "mul": result = a * b; break;
-        case "div": 
-            if (b === 0) {
-                result = "Cannot divide by zero";
-            } else result = a / b;
-            break;
-    }
-
-    document.getElementById("result").innerText = "Result: " + result;
-    addToHistory(`${a} ${op} ${b} = ${result}`);
+  fetch(API + "/api/calculate",{
+    method:"POST",
+    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body
+  })
+  .then(r=>r.json())
+  .then(j=>qs("#resultBox").innerText="Result: "+j.result)
+  .catch(()=>qs("#resultBox").innerText="Network error");
 }
 
-function addToHistory(entry) {
-    if (historyList.length >= 8) historyList.shift();
-    historyList.push(entry);
+/* ---------------- FIBONACCI ---------------- */
+let fibData=null;
+const canvas=qs("#canvas"), ctx=canvas.getContext("2d");
+let scale=50, offsetX=canvas.width/2, offsetY=canvas.height/2;
 
-    document.getElementById("historyList").innerHTML =
-        historyList.map(e => `<p>➡️ ${e}</p>`).join("");
+function generate(){
+  const terms=qs("#terms").value;
+  qs("#resultBox").style.display="block";
+  qs("#resultBox").innerText="Generating...";
+
+  fetch(API+"/api/fibonacci",{
+    method:"POST",
+    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:"terms="+terms
+  })
+  .then(r=>r.json())
+  .then(json=>{
+    fibData=json;
+    drawGraph(json);
+    qs("#resultBox").innerText="Generated.";
+  })
+  .catch(()=>qs("#resultBox").innerText="Network error");
 }
 
-/* -------------------------------
-   LOAD FIBONACCI SPIRAL (IMAGE)
---------------------------------*/
-function loadSpiral() {
-    const n = document.getElementById("terms").value;
-    const img = document.getElementById("spiralImage");
-
-    img.src = `${API_BASE}/fibonacci-image?terms=${n}&width=600&height=600&rand=${Math.random()}`;
-
-    document.getElementById("spiralLabel").innerText =
-        `Generated Fibonacci curve with ${n} arcs`;
+/* -------------- DRAW GRAPH + AXIS ---------------- */
+function worldToScreen(x,y){
+  return {x:x*scale+offsetX, y:-y*scale+offsetY};
 }
+
+function drawAxis(){
+  ctx.strokeStyle="#222";
+  ctx.lineWidth=2;
+
+  // X-axis
+  ctx.beginPath();
+  ctx.moveTo(0,offsetY);
+  ctx.lineTo(canvas.width,offsetY);
+  ctx.stroke();
+
+  // Y-axis
+  ctx.beginPath();
+  ctx.moveTo(offsetX,0);
+  ctx.lineTo(offsetX,canvas.height);
+  ctx.stroke();
+
+  // Grid + labels
+  ctx.font="12px Arial";
+  ctx.fillStyle="#555";
+  ctx.strokeStyle="#ddd";
+  ctx.lineWidth=1;
+
+  for(let i=-20;i<=20;i++){
+    // vertical grid lines
+    let p1=worldToScreen(i,20);
+    let p2=worldToScreen(i,-20);
+    ctx.beginPath();
+    ctx.moveTo(p1.x,p1.y);
+    ctx.lineTo(p2.x,p2.y);
+    ctx.stroke();
+
+    // label on X-axis
+    let lbl=worldToScreen(i,0);
+    ctx.fillText(i,lbl.x-3,lbl.y+12);
+  }
+
+  for(let j=-20;j<=20;j++){
+    let p1=worldToScreen(-20,j);
+    let p2=worldToScreen(20,j);
+    ctx.beginPath();
+    ctx.moveTo(p1.x,p1.y);
+    ctx.lineTo(p2.x,p2.y);
+    ctx.stroke();
+
+    let lbl=worldToScreen(0,j);
+    ctx.fillText(j,lbl.x+6,lbl.y+4);
+  }
+}
+
+/* -------------- DRAW SPIRAL ---------------- */
+function drawGraph(data){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawAxis();
+
+  ctx.strokeStyle="#ff6600";
+  ctx.lineWidth=3;
+
+  data.arcs.forEach(a=>{
+    const c=worldToScreen(a.cx,a.cy);
+    const r=a.r*scale;
+    const start=-a.start;
+    const end=-(a.start+Math.PI/2);
+    ctx.beginPath();
+    ctx.arc(c.x,c.y,r,start,end);
+    ctx.stroke();
+  });
+}
+
+window.onload=generate;
 </script>
-
 </body>
 </html>
